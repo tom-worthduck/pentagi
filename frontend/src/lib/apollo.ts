@@ -61,17 +61,20 @@ const isSubscriptionOperation = ({ query }: Operation): boolean => {
 
 // --- Link helpers ---
 
-const createInterceptLink = (transform: (result: FetchResult) => FetchResult): ApolloLink =>
-    new ApolloLink((operation: Operation, forward) =>
-        new Observable((observer) => {
-            const subscription = forward(operation).subscribe({
-                complete: observer.complete.bind(observer),
-                error: observer.error.bind(observer),
-                next: (result: FetchResult) => observer.next(transform(result)),
-            });
+const createInterceptLink = (
+    transform: (result: FetchResult, operation: Operation) => FetchResult,
+): ApolloLink =>
+    new ApolloLink(
+        (operation: Operation, forward) =>
+            new Observable((observer) => {
+                const subscription = forward(operation).subscribe({
+                    complete: observer.complete.bind(observer),
+                    error: observer.error.bind(observer),
+                    next: (result: FetchResult) => observer.next(transform(result, operation)),
+                });
 
-            return () => subscription.unsubscribe();
-        }),
+                return () => subscription.unsubscribe();
+            }),
     );
 
 // --- Subscription → cache configuration ---
@@ -103,6 +106,38 @@ const subscriptionToCacheFieldMap: Record<string, string> = {
     vectorStoreLogAdded: 'vectorStoreLogs',
 };
 
+// --- Cache variant matching ---
+
+const matchesCacheVariant = (
+    storeFieldName: string,
+    cacheField: string,
+    subscriptionVariables?: Record<string, unknown>,
+): boolean => {
+    if (!subscriptionVariables || storeFieldName === cacheField) {
+        return true;
+    }
+
+    const separatorIndex = storeFieldName.indexOf(':');
+
+    if (separatorIndex === -1) {
+        return true;
+    }
+
+    try {
+        const storedArgs = JSON.parse(storeFieldName.slice(separatorIndex + 1)) as Record<string, unknown>;
+
+        return Object.entries(storedArgs).every(([key, value]) => {
+            if (!(key in subscriptionVariables)) {
+                return true;
+            }
+
+            return String(value) === String(subscriptionVariables[key]);
+        });
+    } catch {
+        return true;
+    }
+};
+
 // --- Cache action strategies ---
 
 type CacheActionApplier = (
@@ -124,6 +159,7 @@ const updateCacheForSubscription = (
     subscriptionName: string,
     cacheField: string,
     newItem: { id: number | string },
+    subscriptionVariables?: Record<string, unknown>,
 ): void => {
     if (!newItem?.id) {
         return;
@@ -151,9 +187,14 @@ const updateCacheForSubscription = (
     try {
         cache.modify({
             fields: {
-                [cacheField](existing, { readField, toReference }) {
+                [cacheField](existing, { readField, storeFieldName, toReference }) {
                     const existingArray = (existing ?? []) as readonly Reference[];
-                    const newRef = toReference(newItem as StoreObject);
+
+                    if (!matchesCacheVariant(storeFieldName, cacheField, subscriptionVariables)) {
+                        return existingArray;
+                    }
+
+                    const newRef = toReference(newItem as StoreObject, true);
 
                     if (!newRef) {
                         return existingArray;
@@ -166,11 +207,8 @@ const updateCacheForSubscription = (
                         `[CacheUpdate] ${subscriptionName} | id: ${newItem.id} | exists: ${itemExists} | count: ${existingArray.length}`,
                     );
 
-                    return cacheActionStrategies[action](
-                        existingArray,
-                        newRef,
-                        itemExists,
-                        () => existingArray.filter((ref) => readField('id', ref) !== newItem.id),
+                    return cacheActionStrategies[action](existingArray, newRef, itemExists, () =>
+                        existingArray.filter((ref) => readField('id', ref) !== newItem.id),
                     );
                 },
             },
@@ -207,7 +245,7 @@ const createStreamingLink = (): ApolloLink => {
         return accumulatedLog;
     };
 
-    return createInterceptLink((result) => {
+    return createInterceptLink((result, _operation) => {
         const logUpdate = result.data?.assistantLogUpdated as AssistantLogFragmentFragment | undefined;
 
         if (!logUpdate) {
@@ -245,16 +283,20 @@ const createStreamingLink = (): ApolloLink => {
 };
 
 const createSubscriptionCacheLink = (cacheInstance: InMemoryCache): ApolloLink =>
-    createInterceptLink((result) => {
+    createInterceptLink((result, operation) => {
         if (result.data) {
-            try {
-                for (const [key, value] of Object.entries(result.data)) {
-                    const cacheField = subscriptionToCacheFieldMap[key];
+            const variables = operation.variables as Record<string, unknown> | undefined;
 
-                    if (cacheField && value?.id) {
-                        updateCacheForSubscription(cacheInstance, key, cacheField, value);
-                    }
-                }
+            try {
+                Object.entries(result.data)
+                    .map(([key, value]) => ({ cacheField: subscriptionToCacheFieldMap[key], key, value }))
+                    .filter(
+                        (entry): entry is { cacheField: string; key: string; value: { id: number | string } } =>
+                            !!entry.cacheField && !!entry.value?.id,
+                    )
+                    .forEach(({ cacheField, key, value }) => {
+                        updateCacheForSubscription(cacheInstance, key, cacheField, value, variables);
+                    });
             } catch (error) {
                 Log.error('Error processing subscription cache update:', error);
             }

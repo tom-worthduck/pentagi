@@ -1,26 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import debounce from 'lodash/debounce';
-import { Camera, ListFilter, Search, X } from 'lucide-react';
+import { Camera, ChevronDown, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
+import { useAutoScroll } from '@/hooks/use-auto-scroll';
 import { useFlow } from '@/providers/flow-provider';
 
-import FlowTasksDropdown from '../flow-tasks-dropdown';
 import FlowScreenshot from './flow-screenshot';
 
 const searchFormSchema = z.object({
-    filter: z
-        .object({
-            subtaskIds: z.array(z.string()),
-            taskIds: z.array(z.string()),
-        })
-        .optional(),
     search: z.string(),
 });
 
@@ -28,22 +22,21 @@ const FlowScreenshots = () => {
     const { flowData, flowId } = useFlow();
 
     const screenshots = useMemo(() => flowData?.screenshots ?? [], [flowData?.screenshots]);
-    // Separate state for immediate input value and debounced search value
     const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
+
+    const { containerRef, endRef, hasNewMessages, isScrolledToBottom, scrollToEnd } = useAutoScroll(
+        screenshots,
+        flowId,
+    );
 
     const form = useForm<z.infer<typeof searchFormSchema>>({
         defaultValues: {
-            filter: {
-                subtaskIds: [],
-                taskIds: [],
-            },
             search: '',
         },
         resolver: zodResolver(searchFormSchema),
     });
 
     const searchValue = form.watch('search');
-    const filter = form.watch('filter');
 
     // Create debounced function to update search value
     const debouncedUpdateSearch = useMemo(
@@ -72,80 +65,38 @@ const FlowScreenshots = () => {
 
     // Clear search when flow changes to prevent stale search state
     useEffect(() => {
-        form.reset({
-            filter: {
-                subtaskIds: [],
-                taskIds: [],
-            },
-            search: '',
-        });
+        form.reset({ search: '' });
         setDebouncedSearchValue('');
         debouncedUpdateSearch.cancel();
     }, [flowId, form, debouncedUpdateSearch]);
 
-    const hasActiveFilters = useMemo(() => {
-        const hasSearch = !!searchValue.trim();
-        const hasTaskFilters = !!(filter?.taskIds?.length || filter?.subtaskIds?.length);
-
-        return hasSearch || hasTaskFilters;
-    }, [searchValue, filter]);
-
+    // Memoize filtered screenshots to avoid recomputing on every render
+    // Use debouncedSearchValue for filtering to improve performance
     const filteredScreenshots = useMemo(() => {
         const search = debouncedSearchValue.toLowerCase().trim();
 
-        let filtered = screenshots || [];
-
-        if (search) {
-            filtered = filtered.filter((screenshot) => {
-                return screenshot.url.toLowerCase().includes(search);
-            });
+        if (!search || !screenshots) {
+            return screenshots || [];
         }
 
-        if (filter?.taskIds?.length || filter?.subtaskIds?.length) {
-            const selectedTaskIds = new Set(filter.taskIds ?? []);
-            const selectedSubtaskIds = new Set(filter.subtaskIds ?? []);
-
-            filtered = filtered.filter((screenshot) => {
-                if (screenshot.taskId && selectedTaskIds.has(screenshot.taskId)) {
-                    return true;
-                }
-
-                if (screenshot.subtaskId && selectedSubtaskIds.has(screenshot.subtaskId)) {
-                    return true;
-                }
-
-                return false;
-            });
-        }
-
-        return filtered;
-    }, [screenshots, debouncedSearchValue, filter]);
+        return screenshots.filter((screenshot) => {
+            return screenshot.url.toLowerCase().includes(search);
+        });
+    }, [screenshots, debouncedSearchValue]);
 
     const hasScreenshots = filteredScreenshots && filteredScreenshots.length > 0;
-
-    const handleResetFilters = () => {
-        form.reset({
-            filter: {
-                subtaskIds: [],
-                taskIds: [],
-            },
-            search: '',
-        });
-        setDebouncedSearchValue('');
-        debouncedUpdateSearch.cancel();
-    };
 
     return (
         <div className="flex h-full flex-col">
             <div className="bg-background sticky top-0 z-10 pb-4">
                 <Form {...form}>
-                    <div className="flex gap-2 p-px">
+                    <div className="p-px">
                         <FormField
                             control={form.control}
                             name="search"
                             render={({ field }) => (
                                 <FormControl>
-                                    <InputGroup className="flex-1">
+                                    <InputGroup>
                                         <InputGroupAddon>
                                             <Search />
                                         </InputGroupAddon>
@@ -173,50 +124,40 @@ const FlowScreenshots = () => {
                                 </FormControl>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="filter"
-                            render={({ field }) => (
-                                <FormControl>
-                                    <FlowTasksDropdown
-                                        onChange={field.onChange}
-                                        value={field.value}
-                                    />
-                                </FormControl>
-                            )}
-                        />
                     </div>
                 </Form>
             </div>
 
             {hasScreenshots ? (
-                <div className="flex flex-1 flex-col gap-4 overflow-auto">
-                    {filteredScreenshots.map((screenshot) => (
-                        <FlowScreenshot
-                            key={screenshot.id}
-                            screenshot={screenshot}
-                        />
-                    ))}
-                </div>
-            ) : hasActiveFilters ? (
-                <Empty>
-                    <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <ListFilter />
-                        </EmptyMedia>
-                        <EmptyTitle>No screenshots found</EmptyTitle>
-                        <EmptyDescription>Try adjusting your search or filter parameters</EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent>
+                <div className="relative flex-1 overflow-y-hidden">
+                    <div
+                        className="flex h-full flex-col gap-4 overflow-y-auto"
+                        ref={containerRef}
+                    >
+                        {filteredScreenshots.map((screenshot) => (
+                            <FlowScreenshot
+                                key={screenshot.id}
+                                screenshot={screenshot}
+                            />
+                        ))}
+                        <div ref={endRef} />
+                    </div>
+
+                    {!isScrolledToBottom && (
                         <Button
-                            onClick={handleResetFilters}
+                            className="absolute right-4 bottom-4 z-10 shadow-md hover:shadow-lg"
+                            onClick={() => scrollToEnd()}
+                            size="icon-sm"
+                            type="button"
                             variant="outline"
                         >
-                            <X />
-                            Reset filters
+                            <ChevronDown />
+                            {hasNewMessages && (
+                                <span className="bg-primary absolute -top-1.5 -right-1.5 size-3 rounded-full" />
+                            )}
                         </Button>
-                    </EmptyContent>
-                </Empty>
+                    )}
+                </div>
             ) : (
                 <Empty>
                     <EmptyHeader>
