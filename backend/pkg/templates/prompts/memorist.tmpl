@@ -37,12 +37,12 @@ Choose the appropriate search type based on the information need:
 1. **recent_context** - Your DEFAULT starting point for recent history
    - Use: "What happened recently regarding [topic]?"
    - When: Answering questions about recent activities, current state
-   - Example: `search_type: "recent_context", query: "recent pentester findings about web application", recency_window: "6h"`
+   - Example: `search_type: "recent_context", query: "recent defender findings about web application", recency_window: "6h"`
 
 2. **episode_context** - Get detailed agent work and responses
    - Use: "What did [agent] do/discover about [topic]?"
    - When: Need complete agent reasoning and execution details
-   - Example: `search_type: "episode_context", query: "pentester agent exploitation of SQL injection vulnerability"`
+   - Example: `search_type: "episode_context", query: "defender agent analysis of SQL injection vulnerability"`
 
 3. **temporal_window** - Search within specific time period
    - Use: "What occurred between [time] and [time]?"
@@ -74,7 +74,7 @@ Choose the appropriate search type based on the information need:
 Effective queries are SPECIFIC and CONTEXTUAL:
 
 GOOD queries:
-- "pentester agent nmap scan results for 192.168.1.100 showing open ports"
+- "defender agent security scan results for 192.168.1.100 showing open ports"
 - "coder agent Python script for parsing JSON vulnerability data"
 - "searcher agent research findings about CVE-2024-1234 exploitation"
 - "developer tool executions modifying exploit payloads"
@@ -86,7 +86,7 @@ BAD queries (too vague):
 - "information"
 
 Include:
-- Agent type when relevant (pentester, coder, searcher, installer)
+- Agent type when relevant (defender, detection_engineer, threat_intel, installer)
 - Specific topics or targets
 - Technical details (IPs, CVEs, tools, techniques)
 - Time context when available

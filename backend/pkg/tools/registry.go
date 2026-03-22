@@ -187,7 +187,7 @@ var registryDefinitions = map[string]llms.FunctionDefinition{
 		Description: "Search in a different search engines in the internet and long-term memory " +
 			"by your complex question to the researcher team member, also you can add some instructions to get result " +
 			"in a specific format or structure or content type like " +
-			"code or command samples, manuals, guides, exploits, vulnerability details, repositories, libraries, etc.",
+			"code or command samples, manuals, guides, detection rules, vulnerability details, repositories, libraries, etc.",
 		Parameters: reflector.Reflect(&ComplexSearch{}),
 	},
 	SearchResultToolName: {
@@ -239,11 +239,11 @@ var registryDefinitions = map[string]llms.FunctionDefinition{
 	},
 	SploitusToolName: {
 		Name: SploitusToolName,
-		Description: "Search the Sploitus exploit aggregator (https://sploitus.com) for public exploits, " +
-			"proof-of-concept code, and offensive security tools. Sploitus indexes ExploitDB, Packet Storm, " +
-			"GitHub Security Advisories, and many other sources. Use this tool to find exploit code and PoCs " +
-			"for specific software, services, CVEs, or vulnerability classes (e.g. 'ssh', 'apache log4j', " +
-			"'CVE-2021-44228'). Returns exploit URLs, CVSS scores, CVE references, and publication dates.",
+		Description: "Search the Sploitus vulnerability aggregator (https://sploitus.com) for public vulnerability details, " +
+			"proof-of-concept code, and security tools. Sploitus indexes ExploitDB, Packet Storm, " +
+			"GitHub Security Advisories, and many other sources. Use this tool to find vulnerability details, patches, " +
+			"and advisories for specific software, services, CVEs, or vulnerability classes (e.g. 'ssh', 'apache log4j', " +
+			"'CVE-2021-44228'). Returns vulnerability URLs, CVSS scores, CVE references, and publication dates.",
 		Parameters: reflector.Reflect(&SploitusAction{}),
 	},
 	EnricherResultToolName: {
@@ -308,13 +308,13 @@ var registryDefinitions = map[string]llms.FunctionDefinition{
 	},
 	GraphitiSearchToolName: {
 		Name: GraphitiSearchToolName,
-		Description: "Search the Graphiti temporal knowledge graph for historical penetration testing context, " +
+		Description: "Search the Graphiti temporal knowledge graph for historical security defense context, " +
 			"including previous agent responses, tool execution records, discovered entities, and their relationships. " +
 			"Supports 7 search types: temporal_window (time-bounded search), entity_relationships (graph traversal from an entity), " +
 			"diverse_results (anti-redundancy search), episode_context (full agent reasoning and tool outputs), " +
 			"successful_tools (proven techniques), recent_context (latest findings), and entity_by_label (type-specific entity search). " +
-			"Use this to avoid repeating failed approaches, reuse successful exploitation techniques, understand entity relationships, " +
-			"and build on previous findings within the same penetration testing engagement.",
+			"Use this to avoid repeating failed approaches, reuse successful defense techniques, understand entity relationships, " +
+			"and build on previous findings within the same security defense engagement.",
 		Parameters: reflector.Reflect(&GraphitiSearchAction{}),
 	},
 	MemoristToolName: {
@@ -339,22 +339,22 @@ var registryDefinitions = map[string]llms.FunctionDefinition{
 	},
 	CoderToolName: {
 		Name:        CoderToolName,
-		Description: "Call to developer team member to write a code for the specific task",
+		Description: "Call to detection engineer team member to write detection rules (YARA, Sigma, Suricata), analysis scripts, or response automation",
 		Parameters:  reflector.Reflect(&CoderAction{}),
 	},
 	CodeResultToolName: {
 		Name:        CodeResultToolName,
-		Description: "Send the code result to the user with execution status and fully detailed report about using the result",
+		Description: "Send the detection rule or analysis script result to the user with execution status and detailed report",
 		Parameters:  reflector.Reflect(&CodeResult{}),
 	},
 	PentesterToolName: {
 		Name:        PentesterToolName,
-		Description: "Call to pentester team member to perform a penetration test or looking for vulnerabilities and weaknesses",
+		Description: "Call to defender team member to perform threat detection, incident response, log analysis, or security monitoring",
 		Parameters:  reflector.Reflect(&PentesterAction{}),
 	},
 	HackResultToolName: {
 		Name:        HackResultToolName,
-		Description: "Send the penetration test result to the user with detailed report",
+		Description: "Send the security defense result to the user with detailed report including threat analysis and recommended actions",
 		Parameters:  reflector.Reflect(&HackResult{}),
 	},
 	AdviceToolName: {
