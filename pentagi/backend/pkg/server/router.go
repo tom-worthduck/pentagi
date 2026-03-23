@@ -18,6 +18,7 @@ import (
 	"pentagi/pkg/database"
 	"pentagi/pkg/graph/subscriptions"
 	"pentagi/pkg/providers"
+	remediationservice "pentagi/pkg/remediation/service"
 	"pentagi/pkg/server/auth"
 	"pentagi/pkg/server/logger"
 	"pentagi/pkg/server/oauth"
@@ -145,6 +146,7 @@ func NewRouter(
 	graphqlService := services.NewGraphqlService(
 		db, cfg, baseURL, cfg.CorsOrigins, tokenCache, providers, controller, subscriptions,
 	)
+	remediationSvc := remediationservice.NewRemediationService(orm)
 
 	router := gin.Default()
 
@@ -234,6 +236,7 @@ func NewRouter(
 		setScreenshotsGroup(privateGroup, screenshotService)
 		setPromptsGroup(privateGroup, promptService)
 		setAnalyticsGroup(privateGroup, analyticsService)
+		setRemediationGroup(privateGroup, remediationSvc)
 	}
 
 	privateUserGroup := api.Group("/")
@@ -561,5 +564,12 @@ func setTokensGroup(parent *gin.RouterGroup, svc *services.TokenService) {
 		tokensGroup.GET("/:tokenID", svc.GetToken)
 		tokensGroup.PUT("/:tokenID", svc.UpdateToken)
 		tokensGroup.DELETE("/:tokenID", svc.DeleteToken)
+	}
+}
+
+func setRemediationGroup(parent *gin.RouterGroup, svc *remediationservice.RemediationService) {
+	remediationGroup := parent.Group("/flows/:flowID/remediation")
+	{
+		remediationGroup.GET("/", svc.GenerateFlowRemediation)
 	}
 }
