@@ -1,0 +1,33 @@
+{
+  "report_id": "demo-report-001",
+  "findings": [
+    {
+      "id": "finding-001",
+      "title": "Exposed RDP service",
+      "description": "RDP is reachable from an untrusted network segment.",
+      "severity": "high",
+      "confidence": 0.94,
+      "hostname": "server01",
+      "ip": "10.10.20.15",
+      "platform": "windows",
+      "evidence": ["3389/tcp reachable from external scan node"],
+      "tags": ["rdp", "remote-access"],
+      "services": ["rdp"],
+      "techniques": ["T1021.001"]
+    },
+    {
+      "id": "finding-002",
+      "title": "Weak local administrator hygiene",
+      "description": "Shared local admin access observed across hosts.",
+      "severity": "high",
+      "confidence": 0.87,
+      "hostname": "server01",
+      "ip": "10.10.20.15",
+      "platform": "windows",
+      "evidence": ["Local admin account reused on multiple systems"],
+      "tags": ["admin", "privilege"],
+      "services": [],
+      "techniques": ["T1078"]
+    }
+  ]
+}

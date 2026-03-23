@@ -1,0 +1,18 @@
+{
+  "plan_id": "example",
+  "source": "pentagi",
+  "summary": "Planner-only remediation output generated from PentAGI findings.",
+  "items": [
+    {
+      "category": "network",
+      "title": "Restrict exposed RDP access",
+      "execution_mode": "advisory"
+    },
+    {
+      "category": "identity",
+      "title": "Reduce excessive administrative access",
+      "execution_mode": "advisory"
+    }
+  ],
+  "advisory_only": true
+}
