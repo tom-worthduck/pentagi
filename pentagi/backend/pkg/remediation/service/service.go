@@ -8,8 +8,10 @@ import (
 	"strconv"
 
 	"pentagi/pkg/remediation/flowexport"
+	"pentagi/pkg/remediation/models"
 	"pentagi/pkg/remediation/normalization"
 	"pentagi/pkg/remediation/planner"
+	"pentagi/pkg/remediation/store"
 	"pentagi/pkg/server/logger"
 	"pentagi/pkg/server/response"
 
@@ -21,23 +23,36 @@ import (
 var (
 	ErrRemediationInvalidRequest = response.NewHttpError(400, "Remediation.InvalidRequest", "invalid remediation request")
 	ErrRemediationFlowNotFound   = response.NewHttpError(404, "Remediation.FlowNotFound", "flow not found or not completed")
+	ErrRemediationPlanNotFound   = response.NewHttpError(404, "Remediation.PlanNotFound", "remediation plan not found")
+	ErrRemediationItemNotFound   = response.NewHttpError(404, "Remediation.ItemNotFound", "plan item not found")
 	ErrRemediationNoFindings     = response.NewHttpError(422, "Remediation.NoFindings", "no actionable findings extracted from flow")
+	ErrRemediationBadTransition  = response.NewHttpError(422, "Remediation.InvalidTransition", "invalid approval status transition")
 	ErrRemediationInternal       = response.NewHttpError(500, "Remediation.Internal", "internal remediation error")
 )
 
-// remediationPlanResponse is the API response shape.
+// remediationPlanResponse is the API response for a full plan.
 type remediationPlanResponse struct {
-	FlowID   string          `json:"flow_id"`
-	Findings json.RawMessage `json:"findings"`
-	Plan     json.RawMessage `json:"plan"`
-	Report   string          `json:"report"`
+	ID        uint64                 `json:"id"`
+	FlowID    string                 `json:"flow_id"`
+	PlanID    string                 `json:"plan_id"`
+	Findings  json.RawMessage        `json:"findings"`
+	Plan      json.RawMessage        `json:"plan"`
+	Report    string                 `json:"report"`
+	Approvals []store.ApprovalRecord `json:"approvals"`
 }
 
-// RemediationService handles remediation plan generation for completed flows.
+// approvalRequest is the request body for updating an approval.
+type approvalRequest struct {
+	Status string `json:"status" binding:"required"`
+	Notes  string `json:"notes"`
+}
+
+// RemediationService handles remediation plan generation and approval for completed flows.
 type RemediationService struct {
 	converter  *flowexport.Converter
 	normalizer *normalization.DefaultNormalizer
 	planner    *planner.DefaultPlanner
+	store      *store.Store
 }
 
 // NewRemediationService creates a RemediationService backed by the given GORM handle.
@@ -46,22 +61,23 @@ func NewRemediationService(db *gorm.DB) *RemediationService {
 		converter:  flowexport.NewConverter(db),
 		normalizer: normalization.NewDefaultNormalizer(),
 		planner:    planner.NewDefaultPlanner(),
+		store:      store.NewStore(db),
 	}
 }
 
-// GenerateFlowRemediation generates a remediation plan for a completed PentAGI flow.
-// @Summary Generate remediation plan for a completed flow
+// CreateFlowRemediation generates a remediation plan for a completed flow and persists it.
+// @Summary Generate and save remediation plan for a completed flow
 // @Tags Remediation
 // @Produce json
 // @Security BearerAuth
 // @Param flowID path int true "flow id" minimum(0)
-// @Success 200 {object} response.successResp{data=remediationPlanResponse} "remediation plan generated"
+// @Success 201 {object} response.successResp{data=remediationPlanResponse} "remediation plan created"
 // @Failure 400 {object} response.errorResp "invalid request"
 // @Failure 404 {object} response.errorResp "flow not found or not completed"
 // @Failure 422 {object} response.errorResp "no findings extracted"
 // @Failure 500 {object} response.errorResp "internal error"
-// @Router /flows/{flowID}/remediation [get]
-func (s *RemediationService) GenerateFlowRemediation(c *gin.Context) {
+// @Router /flows/{flowID}/remediation [post]
+func (s *RemediationService) CreateFlowRemediation(c *gin.Context) {
 	flowID, err := strconv.ParseUint(c.Param("flowID"), 10, 64)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Errorf("error parsing flow id")
@@ -69,52 +85,210 @@ func (s *RemediationService) GenerateFlowRemediation(c *gin.Context) {
 		return
 	}
 
-	// Convert flow DB records to ingestion export format
+	userID := c.GetUint64("uid")
+
+	// Generate the plan
+	plan, findings, report, err := s.generatePlan(c, flowID)
+	if err != nil {
+		return // error already written to response
+	}
+
+	// Persist
+	record, err := s.store.SavePlan(flowID, userID, plan, findings, report)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error saving plan for flow %d", flowID)
+		response.Error(c, ErrRemediationInternal, err)
+		return
+	}
+
+	// Load approvals
+	approvals, _ := s.store.GetApprovals(record.ID)
+
+	response.Success(c, http.StatusCreated, remediationPlanResponse{
+		ID:        record.ID,
+		FlowID:    strconv.FormatUint(flowID, 10),
+		PlanID:    plan.PlanID,
+		Findings:  record.FindingsData,
+		Plan:      record.PlanData,
+		Report:    report,
+		Approvals: approvals,
+	})
+}
+
+// GetFlowRemediation returns the most recent saved plan for a flow.
+// If no plan exists, it generates one on-the-fly (but does not persist it).
+// @Summary Get remediation plan for a flow
+// @Tags Remediation
+// @Produce json
+// @Security BearerAuth
+// @Param flowID path int true "flow id" minimum(0)
+// @Success 200 {object} response.successResp{data=remediationPlanResponse} "remediation plan"
+// @Router /flows/{flowID}/remediation [get]
+func (s *RemediationService) GetFlowRemediation(c *gin.Context) {
+	flowID, err := strconv.ParseUint(c.Param("flowID"), 10, 64)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error parsing flow id")
+		response.Error(c, ErrRemediationInvalidRequest, err)
+		return
+	}
+
+	// Check for saved plan
+	record, err := s.store.GetPlanByFlowID(flowID)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error querying plan for flow %d", flowID)
+		response.Error(c, ErrRemediationInternal, err)
+		return
+	}
+
+	if record != nil {
+		approvals, _ := s.store.GetApprovals(record.ID)
+		response.Success(c, http.StatusOK, remediationPlanResponse{
+			ID:        record.ID,
+			FlowID:    strconv.FormatUint(flowID, 10),
+			PlanID:    record.PlanID,
+			Findings:  record.FindingsData,
+			Plan:      record.PlanData,
+			Report:    record.Report,
+			Approvals: approvals,
+		})
+		return
+	}
+
+	// No saved plan — generate on-the-fly
+	plan, findings, report, err := s.generatePlan(c, flowID)
+	if err != nil {
+		return
+	}
+
+	findingsJSON, _ := json.Marshal(findings)
+	planJSON, _ := json.Marshal(plan)
+
+	response.Success(c, http.StatusOK, remediationPlanResponse{
+		FlowID:    strconv.FormatUint(flowID, 10),
+		PlanID:    plan.PlanID,
+		Findings:  findingsJSON,
+		Plan:      planJSON,
+		Report:    report,
+		Approvals: nil,
+	})
+}
+
+// GetApprovals returns the approval records for a flow's most recent plan.
+// @Summary Get approval status for plan items
+// @Tags Remediation
+// @Produce json
+// @Security BearerAuth
+// @Param flowID path int true "flow id" minimum(0)
+// @Success 200 {object} response.successResp{data=[]store.ApprovalRecord} "approval records"
+// @Router /flows/{flowID}/remediation/items [get]
+func (s *RemediationService) GetApprovals(c *gin.Context) {
+	flowID, err := strconv.ParseUint(c.Param("flowID"), 10, 64)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error parsing flow id")
+		response.Error(c, ErrRemediationInvalidRequest, err)
+		return
+	}
+
+	record, err := s.store.GetPlanByFlowID(flowID)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error querying plan for flow %d", flowID)
+		response.Error(c, ErrRemediationInternal, err)
+		return
+	}
+	if record == nil {
+		response.Error(c, ErrRemediationPlanNotFound, nil)
+		return
+	}
+
+	approvals, err := s.store.GetApprovals(record.ID)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error querying approvals")
+		response.Error(c, ErrRemediationInternal, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, approvals)
+}
+
+// UpdateApproval approves or rejects a specific plan item.
+// @Summary Approve or reject a remediation plan item
+// @Tags Remediation
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param flowID path int true "flow id" minimum(0)
+// @Param itemID path string true "plan item id"
+// @Param body body approvalRequest true "approval decision"
+// @Success 200 {object} response.successResp{data=store.ApprovalRecord} "approval updated"
+// @Failure 422 {object} response.errorResp "invalid status transition"
+// @Router /flows/{flowID}/remediation/items/{itemID} [put]
+func (s *RemediationService) UpdateApproval(c *gin.Context) {
+	flowID, err := strconv.ParseUint(c.Param("flowID"), 10, 64)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error parsing flow id")
+		response.Error(c, ErrRemediationInvalidRequest, err)
+		return
+	}
+
+	itemID := c.Param("itemID")
+	if itemID == "" {
+		response.Error(c, ErrRemediationInvalidRequest, nil)
+		return
+	}
+
+	var req approvalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error binding approval request")
+		response.Error(c, ErrRemediationInvalidRequest, err)
+		return
+	}
+
+	record, err := s.store.GetPlanByFlowID(flowID)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error querying plan for flow %d", flowID)
+		response.Error(c, ErrRemediationInternal, err)
+		return
+	}
+	if record == nil {
+		response.Error(c, ErrRemediationPlanNotFound, nil)
+		return
+	}
+
+	userID := c.GetUint64("uid")
+
+	approval, err := s.store.UpdateApproval(record.ID, itemID, req.Status, userID, req.Notes)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Errorf("error updating approval for item %s", itemID)
+		response.Error(c, ErrRemediationBadTransition, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, approval)
+}
+
+// generatePlan runs the full pipeline and writes errors to the gin context if needed.
+func (s *RemediationService) generatePlan(c *gin.Context, flowID uint64) (*models.RemediationPlan, []models.NormalizedFinding, string, error) {
 	export, err := s.converter.ConvertFlow(flowID)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Errorf("error converting flow %d", flowID)
 		response.Error(c, ErrRemediationFlowNotFound, err)
-		return
+		return nil, nil, "", err
 	}
 
-	// Normalize findings from the flow
 	findings, err := s.normalizer.Normalize(export)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Errorf("error normalizing flow %d", flowID)
 		response.Error(c, ErrRemediationNoFindings, err)
-		return
+		return nil, nil, "", err
 	}
 
-	// Generate remediation plan
 	plan, err := s.planner.Generate(findings)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Errorf("error planning remediation for flow %d", flowID)
 		response.Error(c, ErrRemediationInternal, err)
-		return
+		return nil, nil, "", err
 	}
 
-	// Render markdown report
 	report := planner.RenderMarkdownReport(plan, findings)
-
-	// Serialize for response
-	findingsJSON, err := json.Marshal(findings)
-	if err != nil {
-		logger.FromContext(c).WithError(err).Errorf("error marshaling findings")
-		response.Error(c, ErrRemediationInternal, err)
-		return
-	}
-
-	planJSON, err := json.Marshal(plan)
-	if err != nil {
-		logger.FromContext(c).WithError(err).Errorf("error marshaling plan")
-		response.Error(c, ErrRemediationInternal, err)
-		return
-	}
-
-	response.Success(c, http.StatusOK, remediationPlanResponse{
-		FlowID:   export.FlowID,
-		Findings: findingsJSON,
-		Plan:     planJSON,
-		Report:   report,
-	})
+	return plan, findings, report, nil
 }

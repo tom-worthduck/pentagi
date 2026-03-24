@@ -570,6 +570,9 @@ func setTokensGroup(parent *gin.RouterGroup, svc *services.TokenService) {
 func setRemediationGroup(parent *gin.RouterGroup, svc *remediationservice.RemediationService) {
 	remediationGroup := parent.Group("/flows/:flowID/remediation")
 	{
-		remediationGroup.GET("/", svc.GenerateFlowRemediation)
+		remediationGroup.POST("", svc.CreateFlowRemediation)
+		remediationGroup.GET("", svc.GetFlowRemediation)
+		remediationGroup.GET("/items", svc.GetApprovals)
+		remediationGroup.PUT("/items/:itemID", svc.UpdateApproval)
 	}
 }
