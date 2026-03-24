@@ -268,6 +268,34 @@ var vulnPatterns = []VulnPattern{
 		Tags:     []string{"ssrf", "owasp-a10"},
 		Category: "application",
 	},
+	{
+		Keywords: []string{"cve-"},
+		Title:    "Known CVE / Vulnerable Software Version",
+		Severity: models.SeverityHigh,
+		Tags:     []string{"cve", "owasp-a06"},
+		Category: "patching",
+	},
+	{
+		Keywords: []string{"grafana", "jenkins", "kibana", "phpmyadmin", "webmin", "admin panel", "management interface"},
+		Title:    "Exposed Web Service / Admin Panel",
+		Severity: models.SeverityMedium,
+		Tags:     []string{"admin-panel", "exposed-web"},
+		Category: "network",
+	},
+	{
+		Keywords: []string{"outdated", "unpatched", "end of life", "eol", "unsupported version"},
+		Title:    "Outdated or Unpatched Software",
+		Severity: models.SeverityMedium,
+		Tags:     []string{"outdated", "owasp-a06"},
+		Category: "patching",
+	},
+	{
+		Keywords: []string{"exposed database", "mysql exposed", "postgres exposed", "mongodb exposed", "redis exposed", "3306/tcp", "5432/tcp", "27017/tcp", "6379/tcp"},
+		Title:    "Exposed Database Service",
+		Severity: models.SeverityHigh,
+		Tags:     []string{"exposed-database"},
+		Category: "network",
+	},
 }
 
 // classifyAllVulnerabilities returns all matching vulnerability patterns for a given text.
@@ -316,6 +344,12 @@ func containsConfirmation(lower string) bool {
 		"password",
 		"credential",
 		"weak",
+		"cve-",
+		"running",
+		"detected",
+		"found",
+		"open",
+		"potential",
 	}
 	for _, c := range confirmations {
 		if strings.Contains(lower, c) {

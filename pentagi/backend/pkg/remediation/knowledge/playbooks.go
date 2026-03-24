@@ -124,8 +124,8 @@ var DefaultPlaybooks = []Playbook{
 	},
 	// 5. Exposed Remote Desktop (RDP)
 	{
-		MatchTitleContains: []string{"rdp", "remote desktop", "exposed remote desktop"},
-		MatchTagsContains:  []string{"rdp", "remote-access"},
+		MatchTitleContains: []string{"rdp", "remote desktop", "exposed remote desktop", "3389"},
+		MatchTagsContains:  []string{"rdp"},
 		Category:           models.CategoryNetwork,
 		Title:              "Restrict exposed RDP access",
 		Rationale:          "Externally exposed RDP increases attack surface and enables brute-force and credential attacks.",
@@ -249,8 +249,8 @@ var DefaultPlaybooks = []Playbook{
 	},
 	// 10. Exposed SSH Service
 	{
-		MatchTitleContains: []string{"ssh", "exposed ssh"},
-		MatchTagsContains:  []string{"ssh", "exposed-service"},
+		MatchTitleContains: []string{"ssh", "exposed ssh", "openssh", "22/tcp"},
+		MatchTagsContains:  []string{"ssh"},
 		Category:           models.CategoryNetwork,
 		Title:              "Restrict exposed SSH access",
 		Rationale:          "Unrestricted SSH exposure enables brute-force and credential-based attacks.",
@@ -270,6 +270,111 @@ var DefaultPlaybooks = []Playbook{
 			"Restore prior firewall rule if approved access is broken.",
 		},
 		Impact: models.ImpactMedium,
+	},
+	// 11. Known CVE / Vulnerable Software Version
+	{
+		MatchTitleContains: []string{"cve-", "known vulnerability", "vulnerable version", "outdated version"},
+		MatchTagsContains:  []string{"cve", "outdated"},
+		Category:           models.CategoryPatching,
+		Title:              "Patch or mitigate known CVE",
+		Rationale:          "Known CVEs have public exploits and are actively targeted by attackers.",
+		Actions: []string{
+			"Identify the affected software and version from the CVE details.",
+			"Apply the vendor-provided patch or upgrade to a fixed version.",
+			"If no patch is available, apply the recommended workaround or mitigating controls.",
+			"Remove or isolate the affected service if it is not operationally required.",
+		},
+		Prechecks: []string{
+			"Confirm the CVE applies to the running version (not a false positive).",
+			"Identify dependencies and services that rely on the affected software.",
+			"Verify a tested patch or upgrade path is available.",
+		},
+		Verification: []string{
+			"Confirm the software version has been updated past the vulnerable version.",
+			"Re-scan the target to verify the CVE is no longer reported.",
+		},
+		Rollback: []string{
+			"Revert to the prior version if the patch causes regressions.",
+			"Re-apply mitigating controls if rollback is required.",
+		},
+		Impact: models.ImpactHigh,
+	},
+	// 12. Exposed Web Service / Admin Panel
+	{
+		MatchTitleContains: []string{"exposed web", "admin panel", "management interface", "grafana", "jenkins", "kibana", "phpmyadmin", "webmin"},
+		MatchTagsContains:  []string{"admin-panel", "management-interface", "exposed-web"},
+		Category:           models.CategoryNetwork,
+		Title:              "Restrict access to exposed web service or admin panel",
+		Rationale:          "Exposed management interfaces provide attackers with high-value targets for credential attacks and exploitation.",
+		Actions: []string{
+			"Restrict access to the management interface to approved networks only (VPN, bastion, or allowlisted IPs).",
+			"Enforce authentication and MFA on the management interface.",
+			"Update the application to the latest stable version.",
+			"Disable the interface entirely if it is not operationally required.",
+		},
+		Prechecks: []string{
+			"Identify who requires access to the management interface and from where.",
+			"Confirm the current version and check for known vulnerabilities.",
+		},
+		Verification: []string{
+			"Confirm the interface is no longer reachable from unauthorized networks.",
+			"Confirm authorized users can still access it through the approved path.",
+		},
+		Rollback: []string{
+			"Restore prior access rules if the restriction breaks required workflows.",
+		},
+		Impact: models.ImpactMedium,
+	},
+	// 13. Outdated or Unpatched Software
+	{
+		MatchTitleContains: []string{"outdated", "unpatched", "end of life", "eol", "unsupported version", "update available"},
+		MatchTagsContains:  []string{"outdated", "eol", "unpatched"},
+		Category:           models.CategoryPatching,
+		Title:              "Update outdated or unpatched software",
+		Rationale:          "Running outdated software increases exposure to known exploits and reduces vendor support for security fixes.",
+		Actions: []string{
+			"Upgrade the affected software to the latest stable release.",
+			"If upgrade is not possible, apply all available security patches.",
+			"For end-of-life software, plan migration to a supported alternative.",
+		},
+		Prechecks: []string{
+			"Identify the current version and the latest available version.",
+			"Review release notes for breaking changes that may affect operations.",
+		},
+		Verification: []string{
+			"Confirm the software is running the updated version.",
+			"Verify that application functionality is preserved after the update.",
+		},
+		Rollback: []string{
+			"Revert to the prior version if the update causes regressions.",
+		},
+		Impact: models.ImpactMedium,
+	},
+	// 14. Exposed Database Service
+	{
+		MatchTitleContains: []string{"exposed database", "mysql exposed", "postgres exposed", "mongodb exposed", "redis exposed", "3306", "5432", "27017", "6379"},
+		MatchTagsContains:  []string{"exposed-database"},
+		Category:           models.CategoryNetwork,
+		Title:              "Restrict access to exposed database service",
+		Rationale:          "Externally accessible databases are high-value targets for data theft and ransomware.",
+		Actions: []string{
+			"Restrict database access to application servers and approved management hosts only.",
+			"Ensure the database is not bound to 0.0.0.0 or a public interface.",
+			"Enforce strong authentication and disable default accounts.",
+			"Enable TLS for database connections.",
+		},
+		Prechecks: []string{
+			"Identify all applications and services that connect to the database.",
+			"Confirm firewall rules or network policies can be applied without breaking connectivity.",
+		},
+		Verification: []string{
+			"Confirm the database port is no longer reachable from unauthorized networks.",
+			"Confirm application connectivity is preserved.",
+		},
+		Rollback: []string{
+			"Restore prior firewall or bind address configuration if application connectivity is broken.",
+		},
+		Impact: models.ImpactHigh,
 	},
 }
 

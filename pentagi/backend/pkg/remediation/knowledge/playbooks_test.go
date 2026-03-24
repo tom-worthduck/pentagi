@@ -149,6 +149,73 @@ func TestMatchPlaybookCaseInsensitive(t *testing.T) {
 	}
 }
 
+func TestMatchPlaybookSSHDoesNotMatchRDP(t *testing.T) {
+	f := models.NormalizedFinding{
+		Finding: models.Finding{
+			Title: "Exposed SSH Service",
+			Tags:  []string{"ssh"},
+		},
+	}
+	pb, ok := MatchPlaybook(f)
+	if !ok {
+		t.Fatal("expected playbook match for SSH")
+	}
+	if pb.Title == "Restrict exposed RDP access" {
+		t.Error("SSH finding should not match the RDP playbook")
+	}
+	if pb.Title != "Restrict exposed SSH access" {
+		t.Errorf("expected SSH playbook, got %q", pb.Title)
+	}
+}
+
+func TestMatchPlaybookCVE(t *testing.T) {
+	f := models.NormalizedFinding{
+		Finding: models.Finding{
+			Title: "Known CVE / Vulnerable Software Version",
+			Tags:  []string{"cve"},
+		},
+	}
+	pb, ok := MatchPlaybook(f)
+	if !ok {
+		t.Fatal("expected playbook match for CVE")
+	}
+	if pb.Category != models.CategoryPatching {
+		t.Errorf("expected patching category, got %s", pb.Category)
+	}
+}
+
+func TestMatchPlaybookGrafana(t *testing.T) {
+	f := models.NormalizedFinding{
+		Finding: models.Finding{
+			Title: "Exposed Grafana Dashboard",
+			Tags:  []string{"exposed-web"},
+		},
+	}
+	pb, ok := MatchPlaybook(f)
+	if !ok {
+		t.Fatal("expected playbook match for exposed web service")
+	}
+	if pb.Category != models.CategoryNetwork {
+		t.Errorf("expected network category, got %s", pb.Category)
+	}
+}
+
+func TestMatchPlaybookExposedDatabase(t *testing.T) {
+	f := models.NormalizedFinding{
+		Finding: models.Finding{
+			Title: "Exposed Database Service",
+			Tags:  []string{"exposed-database"},
+		},
+	}
+	pb, ok := MatchPlaybook(f)
+	if !ok {
+		t.Fatal("expected playbook match for exposed database")
+	}
+	if pb.Category != models.CategoryNetwork {
+		t.Errorf("expected network category, got %s", pb.Category)
+	}
+}
+
 func TestAllPlaybooksHaveRequiredFields(t *testing.T) {
 	for i, pb := range DefaultPlaybooks {
 		if pb.Title == "" {

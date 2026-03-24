@@ -61,7 +61,7 @@ func TestGenerateWithUnmatchedFinding(t *testing.T) {
 			FindingID: "f-unknown",
 			Source:    "pentagi",
 			Finding: models.Finding{
-				Title:    "Some Unknown Vulnerability Type",
+				Title:    "Proprietary Protocol Anomaly",
 				Severity: models.SeverityLow,
 			},
 		},
