@@ -200,6 +200,25 @@ func TestMatchPlaybookGrafana(t *testing.T) {
 	}
 }
 
+func TestMatchPlaybookAdminPanelDoesNotMatchIdentity(t *testing.T) {
+	f := models.NormalizedFinding{
+		Finding: models.Finding{
+			Title: "Exposed Web Service / Admin Panel",
+			Tags:  []string{"admin-panel", "exposed-web"},
+		},
+	}
+	pb, ok := MatchPlaybook(f)
+	if !ok {
+		t.Fatal("expected playbook match for admin panel")
+	}
+	if pb.Title == "Reduce excessive administrative access" {
+		t.Error("admin panel finding should not match the identity/privileges playbook")
+	}
+	if pb.Category != models.CategoryNetwork {
+		t.Errorf("expected network category, got %s", pb.Category)
+	}
+}
+
 func TestMatchPlaybookExposedDatabase(t *testing.T) {
 	f := models.NormalizedFinding{
 		Finding: models.Finding{

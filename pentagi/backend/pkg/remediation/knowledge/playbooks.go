@@ -175,8 +175,8 @@ var DefaultPlaybooks = []Playbook{
 	},
 	// 7. Excessive Administrative Privileges
 	{
-		MatchTitleContains: []string{"admin", "privilege", "excessive", "local administrator"},
-		MatchTagsContains:  []string{"privilege", "identity"},
+		MatchTitleContains: []string{"admin privilege", "excessive privilege", "over-privileged", "local administrator", "domain admin", "unnecessary privilege"},
+		MatchTagsContains:  []string{"privilege"},
 		Category:           models.CategoryIdentity,
 		Title:              "Reduce excessive administrative access",
 		Rationale:          "Over-privileged access increases blast radius after compromise.",
