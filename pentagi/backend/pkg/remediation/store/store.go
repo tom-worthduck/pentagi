@@ -2,6 +2,7 @@
 package store
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -11,20 +12,63 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// JSONB is a wrapper around json.RawMessage that implements the sql.Scanner
+// and driver.Valuer interfaces for GORM v1 JSONB column compatibility.
+type JSONB json.RawMessage
+
+// Value implements driver.Valuer — returns the raw JSON bytes as a string for PostgreSQL.
+func (j JSONB) Value() (driver.Value, error) {
+	if len(j) == 0 {
+		return "{}", nil
+	}
+	return string(j), nil
+}
+
+// Scan implements sql.Scanner — reads JSON from the database into the JSONB type.
+func (j *JSONB) Scan(value interface{}) error {
+	if value == nil {
+		*j = JSONB("{}")
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		*j = JSONB(v)
+	case string:
+		*j = JSONB(v)
+	default:
+		return fmt.Errorf("unsupported type for JSONB: %T", value)
+	}
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler so the API response contains parsed JSON, not a string.
+func (j JSONB) MarshalJSON() ([]byte, error) {
+	if len(j) == 0 {
+		return []byte("{}"), nil
+	}
+	return []byte(j), nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *JSONB) UnmarshalJSON(data []byte) error {
+	*j = JSONB(data)
+	return nil
+}
+
 // PlanRecord is the GORM model for the remediation_plans table.
 type PlanRecord struct {
-	ID           uint64          `gorm:"column:id;primary_key;auto_increment" json:"id"`
-	PlanID       string          `gorm:"column:plan_id;not null" json:"plan_id"`
-	FlowID       uint64          `gorm:"column:flow_id;not null" json:"flow_id"`
-	UserID       uint64          `gorm:"column:user_id;not null" json:"user_id"`
-	Source       string          `gorm:"column:source;not null;default:'pentagi'" json:"source"`
-	Summary      string          `gorm:"column:summary;not null" json:"summary"`
-	AdvisoryOnly bool            `gorm:"column:advisory_only;not null;default:true" json:"advisory_only"`
-	PlanData     json.RawMessage `gorm:"column:plan_data;type:jsonb;not null" json:"plan_data"`
-	FindingsData json.RawMessage `gorm:"column:findings_data;type:jsonb;not null" json:"findings_data"`
-	Report       string          `gorm:"column:report;not null" json:"report"`
-	CreatedAt    time.Time       `gorm:"column:created_at" json:"created_at"`
-	UpdatedAt    time.Time       `gorm:"column:updated_at" json:"updated_at"`
+	ID           uint64    `gorm:"column:id;primary_key;auto_increment" json:"id"`
+	PlanID       string    `gorm:"column:plan_id;not null" json:"plan_id"`
+	FlowID       uint64    `gorm:"column:flow_id;not null" json:"flow_id"`
+	UserID       uint64    `gorm:"column:user_id;not null" json:"user_id"`
+	Source       string    `gorm:"column:source;not null;default:'pentagi'" json:"source"`
+	Summary      string    `gorm:"column:summary;not null" json:"summary"`
+	AdvisoryOnly bool      `gorm:"column:advisory_only;not null;default:true" json:"advisory_only"`
+	PlanData     JSONB     `gorm:"column:plan_data;type:jsonb;not null" json:"plan_data"`
+	FindingsData JSONB     `gorm:"column:findings_data;type:jsonb;not null" json:"findings_data"`
+	Report       string    `gorm:"column:report;not null" json:"report"`
+	CreatedAt    time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt    time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
 func (PlanRecord) TableName() string { return "remediation_plans" }
@@ -80,8 +124,8 @@ func (s *Store) SavePlan(
 		Source:       plan.Source,
 		Summary:      plan.Summary,
 		AdvisoryOnly: plan.AdvisoryOnly,
-		PlanData:     planJSON,
-		FindingsData: findingsJSON,
+		PlanData:     JSONB(planJSON),
+		FindingsData: JSONB(findingsJSON),
 		Report:       report,
 	}
 

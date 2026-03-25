@@ -35,8 +35,8 @@ type remediationPlanResponse struct {
 	ID        uint64                 `json:"id"`
 	FlowID    string                 `json:"flow_id"`
 	PlanID    string                 `json:"plan_id"`
-	Findings  json.RawMessage        `json:"findings"`
-	Plan      json.RawMessage        `json:"plan"`
+	Findings  store.JSONB            `json:"findings"`
+	Plan      store.JSONB            `json:"plan"`
 	Report    string                 `json:"report"`
 	Approvals []store.ApprovalRecord `json:"approvals"`
 }
@@ -166,8 +166,8 @@ func (s *RemediationService) GetFlowRemediation(c *gin.Context) {
 	response.Success(c, http.StatusOK, remediationPlanResponse{
 		FlowID:    strconv.FormatUint(flowID, 10),
 		PlanID:    plan.PlanID,
-		Findings:  findingsJSON,
-		Plan:      planJSON,
+		Findings:  store.JSONB(findingsJSON),
+		Plan:      store.JSONB(planJSON),
 		Report:    report,
 		Approvals: nil,
 	})
