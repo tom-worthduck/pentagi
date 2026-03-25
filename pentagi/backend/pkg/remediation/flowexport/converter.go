@@ -15,26 +15,26 @@ import (
 
 // flowRow mirrors the GORM Flow model fields we need.
 type flowRow struct {
-	ID        uint64    `gorm:"column:id"`
-	Status    string    `gorm:"column:status"`
-	Title     string    `gorm:"column:title"`
-	Model     string    `gorm:"column:model"`
-	CreatedAt time.Time `gorm:"column:created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at"`
+	ID        uint64     `gorm:"column:id"`
+	Status    string     `gorm:"column:status"`
+	Title     string     `gorm:"column:title"`
+	Model     string     `gorm:"column:model"`
+	CreatedAt *time.Time `gorm:"column:created_at"`
+	UpdatedAt *time.Time `gorm:"column:updated_at"`
 }
 
 func (flowRow) TableName() string { return "flows" }
 
 // taskRow mirrors the GORM Task model fields we need.
 type taskRow struct {
-	ID        uint64    `gorm:"column:id"`
-	Status    string    `gorm:"column:status"`
-	Title     string    `gorm:"column:title"`
-	Input     string    `gorm:"column:input"`
-	Result    string    `gorm:"column:result"`
-	FlowID    uint64    `gorm:"column:flow_id"`
-	CreatedAt time.Time `gorm:"column:created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at"`
+	ID        uint64     `gorm:"column:id"`
+	Status    string     `gorm:"column:status"`
+	Title     string     `gorm:"column:title"`
+	Input     string     `gorm:"column:input"`
+	Result    string     `gorm:"column:result"`
+	FlowID    uint64     `gorm:"column:flow_id"`
+	CreatedAt *time.Time `gorm:"column:created_at"`
+	UpdatedAt *time.Time `gorm:"column:updated_at"`
 }
 
 func (taskRow) TableName() string { return "tasks" }
@@ -171,8 +171,8 @@ func (c *Converter) ConvertFlow(flowID uint64) (*ingestion.PentAGIFlowExport, er
 			Status:    t.Status,
 			Input:     t.Input,
 			Result:    t.Result,
-			CreatedAt: t.CreatedAt,
-			UpdatedAt: t.UpdatedAt,
+			CreatedAt: safeTime(t.CreatedAt),
+			UpdatedAt: safeTime(t.UpdatedAt),
 		}
 
 		// Subtasks
@@ -234,9 +234,16 @@ func (c *Converter) ConvertFlow(flowID uint64) (*ingestion.PentAGIFlowExport, er
 		Status:    flow.Status,
 		Model:     flow.Model,
 		Tasks:     exportTasks,
-		CreatedAt: flow.CreatedAt,
-		UpdatedAt: flow.UpdatedAt,
+		CreatedAt: safeTime(flow.CreatedAt),
+		UpdatedAt: safeTime(flow.UpdatedAt),
 	}, nil
+}
+
+func safeTime(t *time.Time) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return *t
 }
 
 // groupBy groups a slice by a key extracted from each element.
