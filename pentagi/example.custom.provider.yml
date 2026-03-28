@@ -1,0 +1,134 @@
+# HardenAGI Provider Configuration for LM Studio
+# Maps agent roles to optimal models from local stack
+# Based on PentAGI reference config (vllm-qwen3.5-27b-fp8.provider.yml)
+
+simple:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0
+    output: 0
+
+simple_json:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  json: true
+  price:
+    input: 0
+    output: 0
+
+primary_agent:
+  model: "qwen3.5-27b"
+  temperature: 1.0
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+assistant:
+  model: "qwen3.5-27b"
+  temperature: 1.0
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+generator:
+  model: "qwen3.5-27b"
+  temperature: 1.0
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+refiner:
+  model: "qwen3.5-27b"
+  temperature: 1.0
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+adviser:
+  model: "qwen3.5-27b"
+  temperature: 1.0
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+reflector:
+  model: "qwen3.5-27b"
+  temperature: 1.0
+  top_p: 0.95
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0
+    output: 0
+
+searcher:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0
+    output: 0
+
+enricher:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0
+    output: 0
+
+coder:
+  model: "qwen2.5-coder-32b-instruct"
+  temperature: 0.6
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+installer:
+  model: "qwen2.5-coder-32b-instruct"
+  temperature: 0.6
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
+
+pentester:
+  model: "qwen2.5-coder-32b-instruct"
+  temperature: 0.6
+  top_p: 0.95
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0
+    output: 0
