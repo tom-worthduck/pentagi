@@ -60,7 +60,7 @@ refiner:
     output: 0.0
 
 adviser:
-  model: "qwen2.5-32b-instruct"
+  model: "trend-cybertron.llama-primus-nemotron-70b-instruct"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -70,7 +70,7 @@ adviser:
     output: 0.0
 
 reflector:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen2.5-14b-instruct"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -120,7 +120,7 @@ installer:
     output: 0.0
 
 pentester:
-  model: "qwen2.5-32b-instruct"
+  model: "gpt-oss-cybersecurity-20b-merged-heretic"
   temperature: 0.7
   top_p: 0.8
   n: 1
