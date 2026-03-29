@@ -1,0 +1,130 @@
+simple:
+  model: "qwen2.5-14b-instruct"
+  temperature: 0.5
+  top_p: 0.5
+  n: 1
+  max_tokens: 3000
+  price:
+    input: 0.0
+    output: 0.0
+
+simple_json:
+  model: "qwen2.5-14b-instruct"
+  temperature: 0.5
+  top_p: 0.5
+  n: 1
+  max_tokens: 3000
+  json: true
+  price:
+    input: 0.0
+    output: 0.0
+
+primary_agent:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0.0
+    output: 0.0
+
+assistant:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 6000
+  price:
+    input: 0.0
+    output: 0.0
+
+generator:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 8192
+  price:
+    input: 0.0
+    output: 0.0
+
+refiner:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 6000
+  price:
+    input: 0.0
+    output: 0.0
+
+adviser:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0.0
+    output: 0.0
+
+reflector:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 3000
+  price:
+    input: 0.0
+    output: 0.0
+
+searcher:
+  model: "qwen2.5-14b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0.0
+    output: 0.0
+
+enricher:
+  model: "qwen2.5-14b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0.0
+    output: 0.0
+
+coder:
+  model: "qwen2.5-coder-32b-instruct"
+  temperature: 0.2
+  top_p: 0.1
+  n: 1
+  max_tokens: 6000
+  price:
+    input: 0.0
+    output: 0.0
+
+installer:
+  model: "qwen2.5-coder-32b-instruct"
+  temperature: 0.2
+  top_p: 0.1
+  n: 1
+  max_tokens: 6000
+  price:
+    input: 0.0
+    output: 0.0
+
+pentester:
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.8
+  n: 1
+  max_tokens: 4000
+  price:
+    input: 0.0
+    output: 0.0
