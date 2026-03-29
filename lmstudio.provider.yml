@@ -20,7 +20,7 @@ simple_json:
     output: 0.0
 
 primary_agent:
-  model: "qwen2.5-32b-instruct"
+  model: "zai-org/glm-4.7-flash"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -30,7 +30,7 @@ primary_agent:
     output: 0.0
 
 assistant:
-  model: "qwen2.5-32b-instruct"
+  model: "zai-org/glm-4.7-flash"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -40,7 +40,7 @@ assistant:
     output: 0.0
 
 generator:
-  model: "qwen2.5-32b-instruct"
+  model: "zai-org/glm-4.7-flash"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -60,7 +60,7 @@ refiner:
     output: 0.0
 
 adviser:
-  model: "trend-cybertron.llama-primus-nemotron-70b-instruct"
+  model: "zai-org/glm-4.7-flash"
   temperature: 0.7
   top_p: 0.8
   n: 1
