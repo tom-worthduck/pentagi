@@ -1,6 +1,11 @@
 # HardenAGI Provider Configuration for LM Studio
-# Maps agent roles to optimal models from local stack
-# Based on PentAGI reference config (vllm-qwen3.5-27b-fp8.provider.yml)
+# Single proven model (qwen2.5-32b-instruct) for all roles
+# This model passed ctester tool call validation
+# Temperature tuned per agent role per PentAGI reference config
+#
+# Why single model: LM Studio loads one model at a time.
+# Multi-model configs cause constant unload/reload cycles.
+# qwen2.5-32b-instruct handles tool calls reliably.
 
 simple:
   model: "qwen2.5-32b-instruct"
@@ -24,9 +29,9 @@ simple_json:
     output: 0
 
 primary_agent:
-  model: "qwen3.5-27b"
-  temperature: 1.0
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -34,9 +39,9 @@ primary_agent:
     output: 0
 
 assistant:
-  model: "qwen3.5-27b"
-  temperature: 1.0
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -44,9 +49,9 @@ assistant:
     output: 0
 
 generator:
-  model: "qwen3.5-27b"
-  temperature: 1.0
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -54,9 +59,9 @@ generator:
     output: 0
 
 refiner:
-  model: "qwen3.5-27b"
-  temperature: 1.0
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -64,9 +69,9 @@ refiner:
     output: 0
 
 adviser:
-  model: "qwen3.5-27b"
-  temperature: 1.0
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.7
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -74,9 +79,9 @@ adviser:
     output: 0
 
 reflector:
-  model: "qwen3.5-27b"
-  temperature: 1.0
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.5
+  top_p: 0.8
   n: 1
   max_tokens: 4000
   price:
@@ -104,9 +109,9 @@ enricher:
     output: 0
 
 coder:
-  model: "qwen2.5-coder-32b-instruct"
-  temperature: 0.6
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.2
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -114,9 +119,9 @@ coder:
     output: 0
 
 installer:
-  model: "qwen2.5-coder-32b-instruct"
-  temperature: 0.6
-  top_p: 0.95
+  model: "qwen2.5-32b-instruct"
+  temperature: 0.2
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
@@ -124,9 +129,9 @@ installer:
     output: 0
 
 pentester:
-  model: "qwen2.5-coder-32b-instruct"
+  model: "qwen2.5-32b-instruct"
   temperature: 0.6
-  top_p: 0.95
+  top_p: 0.9
   n: 1
   max_tokens: 8192
   price:
