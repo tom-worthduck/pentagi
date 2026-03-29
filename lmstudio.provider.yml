@@ -20,7 +20,7 @@ simple_json:
     output: 0.0
 
 primary_agent:
-  model: "zai-org/glm-4.7-flash"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -40,7 +40,7 @@ assistant:
     output: 0.0
 
 generator:
-  model: "zai-org/glm-4.7-flash"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -50,7 +50,7 @@ generator:
     output: 0.0
 
 refiner:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -60,7 +60,7 @@ refiner:
     output: 0.0
 
 adviser:
-  model: "zai-org/glm-4.7-flash"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -100,7 +100,7 @@ enricher:
     output: 0.0
 
 coder:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.2
   top_p: 0.1
   n: 1
@@ -110,7 +110,7 @@ coder:
     output: 0.0
 
 installer:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.2
   top_p: 0.1
   n: 1
