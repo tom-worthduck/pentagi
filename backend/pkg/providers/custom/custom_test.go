@@ -1,14 +1,20 @@
 package custom
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"pentagi/pkg/config"
 	"pentagi/pkg/providers/pconfig"
 	"pentagi/pkg/providers/provider"
+
+	"github.com/vxcontrol/langchaingo/llms"
+	"github.com/vxcontrol/langchaingo/llms/openai"
 )
 
 func TestConfigLoading(t *testing.T) {
@@ -261,6 +267,113 @@ func TestProviderModelsIntegration(t *testing.T) {
 		if model2.Price.Output != 200.0 {
 			t.Errorf("Expected output price 200.0 (after automatic conversion), got %f", model2.Price.Output)
 		}
+	}
+}
+
+type captureDoer struct {
+	request map[string]any
+}
+
+func (d *captureDoer) Do(req *http.Request) (*http.Response, error) {
+	if err := json.NewDecoder(req.Body).Decode(&d.request); err != nil {
+		return nil, err
+	}
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     make(http.Header),
+		Body: io.NopCloser(strings.NewReader(`{
+			"id":"chatcmpl-test",
+			"object":"chat.completion",
+			"created":0,
+			"model":"test-model",
+			"choices":[{"index":0,"message":{"role":"assistant","content":"{\"ok\":true}"},"finish_reason":"stop"}],
+			"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}
+		}`)),
+	}, nil
+}
+
+func TestSimpleJSONUsesJSONSchemaResponseFormat(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{
+		LLMServerKey:   "test-key",
+		LLMServerURL:   "http://example.test/v1",
+		LLMServerModel: "test-model",
+	}
+
+	providerConfig, err := BuildProviderConfig(cfg, []byte(`simple_json:
+  model: "test-model"
+  json: true
+`))
+	if err != nil {
+		t.Fatalf("BuildProviderConfig() error = %v", err)
+	}
+
+	doer := &captureDoer{}
+	llm, err := openai.New(
+		openai.WithToken(cfg.LLMServerKey),
+		openai.WithModel(cfg.LLMServerModel),
+		openai.WithBaseURL(cfg.LLMServerURL),
+		openai.WithHTTPClient(doer),
+	)
+	if err != nil {
+		t.Fatalf("openai.New() error = %v", err)
+	}
+	llmJSON, err := openai.New(
+		openai.WithToken(cfg.LLMServerKey),
+		openai.WithModel(cfg.LLMServerModel),
+		openai.WithBaseURL(cfg.LLMServerURL),
+		openai.WithHTTPClient(doer),
+		openai.WithResponseFormat(customJSONSchemaResponseFormat()),
+	)
+	if err != nil {
+		t.Fatalf("openai.New() llmJSON error = %v", err)
+	}
+
+	prov := &customProvider{
+		llmJSON:        llmJSON,
+		llm:            llm,
+		model:          cfg.LLMServerModel,
+		providerConfig: providerConfig,
+	}
+
+	_, err = prov.CallEx(t.Context(), pconfig.OptionsTypeSimpleJSON, []llms.MessageContent{
+		llms.TextParts(llms.ChatMessageTypeSystem, "Return valid JSON."),
+		llms.TextParts(llms.ChatMessageTypeHuman, "Return an object with ok=true."),
+	}, nil)
+	if err != nil {
+		t.Fatalf("CallEx() error = %v", err)
+	}
+
+	responseFormat, ok := doer.request["response_format"].(map[string]any)
+	if !ok {
+		t.Fatalf("response_format should be present")
+	}
+	if got := responseFormat["type"]; got != "json_schema" {
+		t.Fatalf("response_format.type = %v, want json_schema", got)
+	}
+
+	jsonSchema, ok := responseFormat["json_schema"].(map[string]any)
+	if !ok {
+		t.Fatalf("json_schema should be present")
+	}
+	if got := jsonSchema["name"]; got != "structured_output" {
+		t.Fatalf("json_schema.name = %v, want structured_output", got)
+	}
+	if got := jsonSchema["strict"]; got != true {
+		t.Fatalf("json_schema.strict = %v, want true", got)
+	}
+
+	schema, ok := jsonSchema["schema"].(map[string]any)
+	if !ok {
+		t.Fatalf("schema should be present")
+	}
+	if got := schema["type"]; got != "object" {
+		t.Fatalf("schema.type = %v, want object", got)
+	}
+	if got := schema["additionalProperties"]; got != true {
+		t.Fatalf("schema.additionalProperties = %v, want true", got)
 	}
 }
 

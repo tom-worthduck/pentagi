@@ -49,6 +49,7 @@ func DefaultProviderConfig(cfg *config.Config) (*pconfig.ProviderConfig, error) 
 }
 
 type customProvider struct {
+	llmJSON        *openai.LLM
 	llm            *openai.LLM
 	model          string
 	models         pconfig.ModelsConfig
@@ -87,6 +88,11 @@ func New(cfg *config.Config, providerConfig *pconfig.ProviderConfig) (provider.P
 		return nil, err
 	}
 
+	jsonClient, err := openai.New(append(opts, openai.WithResponseFormat(customJSONSchemaResponseFormat()))...)
+	if err != nil {
+		return nil, err
+	}
+
 	// Use centralized model loading with prefix filtering
 	models, err := provider.LoadModelsFromHTTP(baseURL, baseKey, httpClient, cfg.LLMServerProvider)
 	if err != nil {
@@ -95,6 +101,7 @@ func New(cfg *config.Config, providerConfig *pconfig.ProviderConfig) (provider.P
 	}
 
 	return &customProvider{
+		llmJSON:        jsonClient,
 		llm:            client,
 		model:          baseModel,
 		models:         models,
@@ -143,7 +150,7 @@ func (p *customProvider) Call(
 	prompt string,
 ) (string, error) {
 	return provider.WrapGenerateFromSinglePrompt(
-		ctx, p, opt, p.llm, prompt,
+		ctx, p, opt, p.llmForOption(opt), prompt,
 		p.providerConfig.GetOptionsForType(opt)...,
 	)
 }
@@ -155,7 +162,7 @@ func (p *customProvider) CallEx(
 	streamCb streaming.Callback,
 ) (*llms.ContentResponse, error) {
 	return provider.WrapGenerateContent(
-		ctx, p, opt, p.llm.GenerateContent, chain,
+		ctx, p, opt, p.llmForOption(opt).GenerateContent, chain,
 		append([]llms.CallOption{
 			llms.WithStreamingFunc(streamCb),
 		}, p.providerConfig.GetOptionsForType(opt)...)...,
@@ -170,12 +177,34 @@ func (p *customProvider) CallWithTools(
 	streamCb streaming.Callback,
 ) (*llms.ContentResponse, error) {
 	return provider.WrapGenerateContent(
-		ctx, p, opt, p.llm.GenerateContent, chain,
+		ctx, p, opt, p.llmForOption(opt).GenerateContent, chain,
 		append([]llms.CallOption{
 			llms.WithTools(tools),
 			llms.WithStreamingFunc(streamCb),
 		}, p.providerConfig.GetOptionsForType(opt)...)...,
 	)
+}
+
+func (p *customProvider) llmForOption(opt pconfig.ProviderOptionsType) *openai.LLM {
+	if opt == pconfig.OptionsTypeSimpleJSON && p.llmJSON != nil {
+		return p.llmJSON
+	}
+
+	return p.llm
+}
+
+func customJSONSchemaResponseFormat() *openai.ResponseFormat {
+	return &openai.ResponseFormat{
+		Type: "json_schema",
+		JSONSchema: &openai.ResponseFormatJSONSchema{
+			Name:   "structured_output",
+			Strict: true,
+			Schema: &openai.ResponseFormatJSONSchemaProperty{
+				Type:                 "object",
+				AdditionalProperties: true,
+			},
+		},
+	}
 }
 
 func (p *customProvider) GetUsage(info map[string]any) pconfig.CallUsage {
