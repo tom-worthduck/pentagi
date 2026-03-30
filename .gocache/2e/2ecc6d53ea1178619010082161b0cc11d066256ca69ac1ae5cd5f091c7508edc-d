@@ -1,8 +1,0 @@
-./calls.go
-./cypher.go
-./doc.go
-./license.go
-./logger.go
-./pow.go
-./sdk.go
-./transport.go

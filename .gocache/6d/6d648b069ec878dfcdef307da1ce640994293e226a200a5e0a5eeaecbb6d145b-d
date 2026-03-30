@@ -1,3 +1,0 @@
-./mem.go
-./mem_darwin.go
-./mem_darwin_nocgo.go

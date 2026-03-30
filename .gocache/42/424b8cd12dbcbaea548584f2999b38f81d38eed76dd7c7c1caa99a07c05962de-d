@@ -1,7 +1,0 @@
-./chat_message_history.go
-./doc.go
-./documents.go
-./memory.go
-./output_parsers.go
-./retrivers.go
-./schema.go

@@ -1,5 +1,0 @@
-./collector.go
-./lfclient.go
-./obs.go
-./otelclient.go
-./obs_test.go

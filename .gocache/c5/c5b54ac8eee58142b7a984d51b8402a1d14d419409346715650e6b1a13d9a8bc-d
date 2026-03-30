@@ -1,5 +1,0 @@
-./chat.go
-./completions.go
-./embeddings.go
-./openaiclient.go
-./openaitts.go

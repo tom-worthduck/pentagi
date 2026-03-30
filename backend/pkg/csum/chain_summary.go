@@ -855,72 +855,33 @@ func getSummarizationInstructions(sumCase int) string {
 	switch sumCase {
 	case 1:
 		return fmt.Sprintf(`
-SUMMARIZATION TASK: Create a concise summary of AI responses while preserving essential information from the conversation context.
+Create a concise summary of the AI responses in <messages>. Use <tasks> only to understand what the responses are solving.
 
-DATA STRUCTURE:
-- <tasks> contains user queries that provide critical context for understanding AI responses
-- <messages> contains AI responses that need to be summarized
+If a message contains <tool_call name="%s"> followed by a tool response, treat that pair as previously summarized history. Keep the key commands, parameters, errors, results, and decisions, but avoid duplication.
 
-HANDLING PREVIOUSLY SUMMARIZED CONTENT:
-When you encounter a sequence of messages where:
-1. A message contains <tool_call name="%s">
-2. Followed by a message with role="tool" containing execution history
+Preserve technical details needed for continuation: commands, parameters, errors, results, file paths, URLs, versions, IDs, code snippets that affect implementation, and explicit next steps.
 
-This pattern is a crucial signal - it means you're looking at ALREADY summarized information. When you see this:
-1. MUST treat this summarized content as HIGH PRIORITY
-2. Extract and PRESERVE the key technical details (commands, parameters, errors, results)
-3. Integrate this information into your new summary without duplicating
-4. Understand that this summary already represents multiple previous interactions and essential technical details
-
-KEY REQUIREMENTS:
-1. Preserve ALL technical details: function names, parameters, file paths, URLs, versions, numerical values
-2. Maintain complete code examples that demonstrate implementation
-3. Keep intact any step-by-step instructions or procedures
-4. Ensure the summary directly addresses the user queries found in <tasks>
-5. Organize information in a logical flow that matches the problem-solution structure
-6. NEVER include context in the summary, just the summarized content, use context only to understand the <messages>
+Do not summarize the context itself. Summarize only the AI and tool output in <messages>, and follow the problem-solution flow.
 `, cast.SummarizationToolName)
 
 	case 2:
 		return fmt.Sprintf(`
-SUMMARIZATION TASK: Distill standalone AI responses into a comprehensive yet concise summary.
+Create a concise, self-contained summary of the AI and tool responses in <messages>.
 
-DATA STRUCTURE:
-- <messages> contains AI responses that need to be summarized without user context
+If a message contains <tool_call name="%s"> followed by a tool response, treat that pair as previously summarized history. Keep the key commands, parameters, errors, results, and decisions, but avoid duplication.
 
-HANDLING PREVIOUSLY SUMMARIZED CONTENT:
-When you encounter a sequence of messages where:
-1. A message contains <tool_call name="%s">
-2. Followed by a message with role="tool" containing execution history
+Preserve technical details needed for continuation: commands, parameters, errors, results, file paths, URLs, versions, IDs, code snippets that affect implementation, and explicit next steps.
 
-This pattern is a crucial signal - it means you're looking at ALREADY summarized information. When you see this:
-1. MUST treat this summarized content as HIGH PRIORITY
-2. Extract and PRESERVE the key technical details (commands, parameters, errors, results)
-3. Integrate this information into your new summary without duplicating
-4. Understand that this summary already represents multiple previous interactions and essential technical details
-
-KEY REQUIREMENTS:
-1. Ensure the summary is self-contained and provides complete context
-2. Preserve ALL technical details: function names, parameters, file paths, URLs, versions, numerical values
-3. Maintain complete code examples that demonstrate implementation
-4. Identify and prioritize main conclusions, recommendations, and technical explanations
-5. Organize information in a logical, sequential structure
+Focus on the main conclusions, recommendations, and technical explanations in logical order.
 `, cast.SummarizationToolName)
 
 	case 3:
 		return `
-SUMMARIZATION TASK: Extract key requirements and context from user queries.
+Summarize the user messages in <tasks> into a short requirements brief.
 
-DATA STRUCTURE:
-- <tasks> contains user messages that need to be summarized
+Keep the primary goals, constraints, success criteria, technical specifics, and any explicit next-step expectations.
 
-KEY REQUIREMENTS:
-1. Identify primary goals, questions, and objectives expressed by the user
-2. Preserve ALL technical specifications: function names, parameters, file paths, URLs, versions
-3. Maintain all constraints, requirements, and success criteria mentioned
-4. Capture the complete problem context and any background information provided
-5. Organize requirements in order of stated or implied priority
-6. USE directive forms and imperative mood for better translate original text
+Prefer direct, action-oriented wording and keep the result easy to continue from.
 `
 	default:
 		return ""

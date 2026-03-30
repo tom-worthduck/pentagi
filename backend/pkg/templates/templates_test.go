@@ -242,6 +242,39 @@ func TestTemplateRenderability(t *testing.T) {
 	testRenderability(t, reflect.ValueOf(defaultPrompts), dummyData, "DefaultPrompts")
 }
 
+func TestSummarizerPrompt_DefaultIsCompact(t *testing.T) {
+	defaultPrompts, err := templates.GetDefaultPrompts()
+	if err != nil {
+		t.Fatalf("Failed to load default prompts: %v", err)
+	}
+
+	prompt := defaultPrompts.AgentsPrompts.Summarizer.System.Template
+
+	forbidden := []string{
+		"100% of the essential information",
+		"preserve without exception",
+		"## XML PROCESSING REQUIREMENTS",
+		"## EXECUTION ENVIRONMENT",
+	}
+	for _, phrase := range forbidden {
+		if strings.Contains(prompt, phrase) {
+			t.Fatalf("summarizer prompt should not contain %q", phrase)
+		}
+	}
+
+	required := []string{
+		"Summarize the provided content",
+		"Do not reproduce XML tags",
+		"Preserve technical specifics",
+		"{{.SummarizedContentPrefix}}",
+	}
+	for _, phrase := range required {
+		if !strings.Contains(prompt, phrase) {
+			t.Fatalf("summarizer prompt should contain %q", phrase)
+		}
+	}
+}
+
 // testRenderability recursively tests if all prompts can be rendered with dummy data
 func testRenderability(t *testing.T, v reflect.Value, dummyData map[string]any, structName string) {
 	if v.Kind() == reflect.Ptr {
