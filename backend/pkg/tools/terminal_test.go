@@ -210,6 +210,33 @@ func TestPrimaryTerminalName(t *testing.T) {
 	}
 }
 
+func TestNormalizeWorkingDir(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		cwd  string
+		want string
+	}{
+		{name: "empty defaults to work", cwd: "", want: "/work"},
+		{name: "workspace alias maps to work", cwd: "/workspace", want: "/work"},
+		{name: "workspace subdir maps to work subdir", cwd: "/workspace/results", want: "/work/results"},
+		{name: "work path preserved", cwd: "/work/output", want: "/work/output"},
+		{name: "other path preserved", cwd: "/tmp", want: "/tmp"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := normalizeWorkingDir(tt.cwd)
+			if got != tt.want {
+				t.Fatalf("normalizeWorkingDir(%q) = %q, want %q", tt.cwd, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFormatTerminalInput(t *testing.T) {
 	t.Parallel()
 

@@ -154,9 +154,7 @@ func (t *terminal) ExecCommand(
 		return "", fmt.Errorf("container is not running")
 	}
 
-	if cwd == "" {
-		cwd = docker.WorkFolderPathInContainer
-	}
+	cwd = normalizeWorkingDir(cwd)
 
 	formattedCommand := FormatTerminalInput(cwd, command)
 	_, err = t.tlp.PutMsg(ctx, database.TermlogTypeStdin, formattedCommand, t.containerID, t.taskID, t.subtaskID)
@@ -203,6 +201,20 @@ func (t *terminal) ExecCommand(
 	}
 
 	return t.getExecResult(ctx, createResp.ID, timeout)
+}
+
+func normalizeWorkingDir(cwd string) string {
+	if cwd == "" {
+		return docker.WorkFolderPathInContainer
+	}
+	if cwd == "/workspace" {
+		return docker.WorkFolderPathInContainer
+	}
+	if strings.HasPrefix(cwd, "/workspace/") {
+		return strings.Replace(cwd, "/workspace", docker.WorkFolderPathInContainer, 1)
+	}
+
+	return cwd
 }
 
 func (t *terminal) getExecResult(ctx context.Context, id string, timeout time.Duration) (string, error) {
