@@ -1,5 +1,5 @@
 simple:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.5
   top_p: 0.5
   n: 1
@@ -9,7 +9,7 @@ simple:
     output: 0.0
 
 simple_json:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.5
   top_p: 0.5
   n: 1
@@ -70,7 +70,7 @@ adviser:
     output: 0.0
 
 reflector:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -80,7 +80,7 @@ reflector:
     output: 0.0
 
 searcher:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
@@ -90,7 +90,7 @@ searcher:
     output: 0.0
 
 enricher:
-  model: "qwen2.5-32b-instruct"
+  model: "qwen/qwen3-coder-next"
   temperature: 0.7
   top_p: 0.8
   n: 1
