@@ -26,16 +26,20 @@ const (
 )
 
 type memory struct {
-	flowID int64
-	store  *pgvector.Store
-	vslp   VectorStoreLogProvider
+	flowID         int64
+	defaultTaskID  *int64
+	defaultSubtask *int64
+	store          *pgvector.Store
+	vslp           VectorStoreLogProvider
 }
 
-func NewMemoryTool(flowID int64, store *pgvector.Store, vslp VectorStoreLogProvider) Tool {
+func NewMemoryTool(flowID int64, taskID, subtaskID *int64, store *pgvector.Store, vslp VectorStoreLogProvider) Tool {
 	return &memory{
-		flowID: flowID,
-		store:  store,
-		vslp:   vslp,
+		flowID:         flowID,
+		defaultTaskID:  taskID,
+		defaultSubtask: subtaskID,
+		store:          store,
+		vslp:           vslp,
 	}
 }
 
@@ -62,6 +66,7 @@ func (m *memory) Handle(ctx context.Context, name string, args json.RawMessage) 
 			logger.WithError(err).Error("failed to unmarshal search in memory action arguments")
 			return "", fmt.Errorf("failed to unmarshal %s search in memory action arguments: %w", name, err)
 		}
+		action = applyDefaultMemoryScope(action, m.defaultTaskID, m.defaultSubtask)
 
 		filters := map[string]any{
 			"flow_id":  strconv.FormatInt(m.flowID, 10),
@@ -249,6 +254,19 @@ func (m *memory) Handle(ctx context.Context, name string, args json.RawMessage) 
 
 func (m *memory) IsAvailable() bool {
 	return m.store != nil
+}
+
+func applyDefaultMemoryScope(action SearchInMemoryAction, defaultTaskID, defaultSubtaskID *int64) SearchInMemoryAction {
+	if action.TaskID == nil && defaultTaskID != nil {
+		taskID := Int64(*defaultTaskID)
+		action.TaskID = &taskID
+	}
+	if action.SubtaskID == nil && defaultSubtaskID != nil {
+		subtaskID := Int64(*defaultSubtaskID)
+		action.SubtaskID = &subtaskID
+	}
+
+	return action
 }
 
 func getGlobalFilters(filters map[string]any) (bool, map[string]any) {

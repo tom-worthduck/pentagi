@@ -569,6 +569,8 @@ func (fte *flowToolsExecutor) GetAssistantExecutor(cfg AssistantExecutorConfig) 
 	} else {
 		memory := NewMemoryTool(
 			fte.flowID,
+			nil,
+			nil,
 			fte.store,
 			fte.vslp,
 		)
@@ -1410,6 +1412,8 @@ func (fte *flowToolsExecutor) GetMemoristExecutor(cfg MemoristExecutorConfig) (C
 
 	memory := NewMemoryTool(
 		fte.flowID,
+		cfg.TaskID,
+		cfg.SubtaskID,
 		fte.store,
 		fte.vslp,
 	)
@@ -1478,6 +1482,8 @@ func (fte *flowToolsExecutor) GetEnricherExecutor(cfg EnricherExecutorConfig) (C
 
 	memory := NewMemoryTool(
 		fte.flowID,
+		cfg.TaskID,
+		cfg.SubtaskID,
 		fte.store,
 		fte.vslp,
 	)
