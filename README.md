@@ -3311,11 +3311,18 @@ For development builds without version tracking:
 docker build -t pentagi:dev .
 ```
 
+To make Docker Compose use that local build, set `PENTAGI_IMAGE=pentagi:dev` in your `.env`.
+After that, the normal compose command will use your custom image:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose-langfuse.yml -f docker-compose-observability.yml up -d
+```
+
 > [!NOTE]
 > - The build scripts automatically determine version from git tags
 > - Release builds (on tag commit) have no revision suffix
 > - Development builds (after tag) include commit hash as revision (e.g., `1.1.0-bc6e800`)
-> - To use the built image locally, update the image name in `docker-compose.yml` or use the `build` option
+> - The compose file already supports this through `PENTAGI_IMAGE`, so you usually do not need to edit `docker-compose.yml`
 
 ## Credits
 
