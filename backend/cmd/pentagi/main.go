@@ -118,10 +118,11 @@ func main() {
 	// Run the server in a separate goroutine
 	go func() {
 		listen := net.JoinHostPort(cfg.ServerHost, strconv.Itoa(cfg.ServerPort))
+		network := listenerNetwork(cfg.ServerHost)
 		if cfg.ServerUseSSL && cfg.ServerSSLCrt != "" && cfg.ServerSSLKey != "" {
-			err = r.RunTLS(listen, cfg.ServerSSLCrt, cfg.ServerSSLKey)
+			err = serveEngine(r, listen, network, cfg.ServerSSLCrt, cfg.ServerSSLKey)
 		} else {
-			err = r.Run(listen)
+			err = serveEngine(r, listen, network, "", "")
 		}
 		if err != nil {
 			log.Fatalf("HTTP server error: %v", err)
