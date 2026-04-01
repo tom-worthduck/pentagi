@@ -20,61 +20,73 @@ simple_json:
     output: 0.0
 
 primary_agent:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.7
   top_p: 0.8
   n: 1
   max_tokens: 4000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 assistant:
-  model: "zai-org/glm-4.7-flash"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.7
   top_p: 0.8
   n: 1
   max_tokens: 6000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 generator:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.7
   top_p: 0.8
   n: 1
   max_tokens: 8192
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 refiner:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.7
   top_p: 0.8
   n: 1
   max_tokens: 6000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 adviser:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.7
   top_p: 0.8
   n: 1
   max_tokens: 4000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 reflector:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.7
   top_p: 0.8
   n: 1
   max_tokens: 3000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
@@ -100,31 +112,37 @@ enricher:
     output: 0.0
 
 coder:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.2
   top_p: 0.1
   n: 1
   max_tokens: 6000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 installer:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.2
   top_p: 0.1
   n: 1
   max_tokens: 6000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
 
 pentester:
-  model: "qwen/qwen3-coder-next"
+  model: "bytedance/seed-oss-36b"
   temperature: 0.15
   top_p: 0.8
   n: 1
   max_tokens: 4000
+  reasoning:
+    effort: medium
   price:
     input: 0.0
     output: 0.0
